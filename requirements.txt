@@ -1,0 +1,6 @@
+# Load Balancer Project Dependencies
+# Core libraries for high-performance HTTP server, async client, and telemetry
+requests>=2.28.0
+tabulate>=0.9.0
+rich>=13.0.0
+pytest>=7.0.0
