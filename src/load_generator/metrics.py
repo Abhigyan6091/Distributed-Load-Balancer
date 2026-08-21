@@ -1,6 +1,3 @@
-"""
-Performance metrics collection, calculation, and reporting for the load generator.
-"""
 import sys
 import os
 import time
@@ -9,7 +6,6 @@ import json
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional
 
-# Ensure UTF-8 output on Windows consoles
 if sys.stdout and hasattr(sys.stdout, "reconfigure"):
     try:
         sys.stdout.reconfigure(encoding="utf-8")
@@ -18,7 +14,6 @@ if sys.stdout and hasattr(sys.stdout, "reconfigure"):
 
 @dataclass
 class RequestResult:
-    """Stores the telemetry of an individual HTTP request."""
     success: bool
     status_code: int
     latency_ms: float
@@ -28,7 +23,6 @@ class RequestResult:
 
 
 class MetricsCollector:
-    """Aggregates request telemetry and calculates statistical summaries."""
     def __init__(self, experiment_name: str = "Experiment"):
         self.experiment_name = experiment_name
         self.results: List[RequestResult] = []
@@ -56,7 +50,6 @@ class MetricsCollector:
         error_rate = (failed_requests / total_requests) * 100.0
         throughput_rps = total_requests / duration_seconds
 
-        # Latencies in milliseconds (all results)
         latencies = sorted([r.latency_ms for r in self.results])
         avg_latency = sum(latencies) / len(latencies)
         min_latency = latencies[0]
@@ -77,13 +70,11 @@ class MetricsCollector:
         p95 = percentile(95)
         p99 = percentile(99)
 
-        # Distribution across backend servers
         backend_distribution: Dict[str, int] = {}
         for r in self.results:
             b_id = r.backend_id or "Unknown"
             backend_distribution[b_id] = backend_distribution.get(b_id, 0) + 1
 
-        # Status code breakdown
         status_codes: Dict[int, int] = {}
         for r in self.results:
             status_codes[r.status_code] = status_codes.get(r.status_code, 0) + 1
@@ -114,7 +105,7 @@ class MetricsCollector:
         summary = self.calculate_summary()
         lat = summary["latency_ms"]
         print("\n" + "=" * 65)
-        print(f"📊 Performance Summary: {summary['experiment_name']}")
+        print(f"Performance Summary: {summary['experiment_name']}")
         print("=" * 65)
         print(f" Total Requests       : {summary['total_requests']}")
         print(f" Successful Requests  : {summary['successful_requests']} ({(summary['successful_requests']/summary['total_requests'])*100:.1f}%)")
@@ -133,8 +124,8 @@ class MetricsCollector:
         print(" Backend Distribution :")
         for b_id, count in sorted(summary['backend_distribution'].items()):
             pct = (count / summary['total_requests']) * 100.0
-            bar = "█" * int(pct / 4)
-            print(f"   • {b_id:<18}: {count:>5} requests ({pct:>5.1f}%)  {bar}")
+            bar = "|" * int(pct / 4)
+            print(f"   - {b_id:<18}: {count:>5} requests ({pct:>5.1f}%)  {bar}")
         print("=" * 65 + "\n")
 
     def save_json(self, filepath: str):

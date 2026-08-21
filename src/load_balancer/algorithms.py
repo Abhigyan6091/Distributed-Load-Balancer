@@ -1,12 +1,8 @@
-"""
-Load Balancing Algorithms: Round Robin, Weighted Round Robin, Least Connections, IP Hash.
-"""
 import threading
 import hashlib
 from typing import List, Optional, Dict, Any
 
 class BackendNode:
-    """Represents a single backend server node."""
     def __init__(self, node_id: str, host: str, port: int, weight: int = 1):
         self.node_id = str(node_id)
         self.host = str(host)
@@ -60,7 +56,6 @@ class BackendNode:
 
 
 class LoadBalancerAlgorithm:
-    """Base class for load balancing algorithms."""
     def __init__(self, nodes: Optional[List[BackendNode]] = None):
         self.nodes: List[BackendNode] = nodes or []
         self._lock = threading.Lock()
@@ -77,7 +72,6 @@ class LoadBalancerAlgorithm:
 
 
 class RoundRobinAlgorithm(LoadBalancerAlgorithm):
-    """Standard Round Robin load balancing algorithm."""
     def __init__(self, nodes: Optional[List[BackendNode]] = None):
         super().__init__(nodes)
         self._index = 0
@@ -94,7 +88,6 @@ class RoundRobinAlgorithm(LoadBalancerAlgorithm):
 
 
 class WeightedRoundRobinAlgorithm(LoadBalancerAlgorithm):
-    """Weighted Round Robin distribution."""
     def __init__(self, nodes: Optional[List[BackendNode]] = None):
         super().__init__(nodes)
         self._current_index = -1
@@ -107,7 +100,7 @@ class WeightedRoundRobinAlgorithm(LoadBalancerAlgorithm):
                 return None
             
             max_weight = max(node.weight for node in healthy)
-            gcd_weight = 1  # simplified gcd for integer weights
+            gcd_weight = 1
             
             while True:
                 self._current_index = (self._current_index + 1) % len(healthy)
@@ -122,30 +115,25 @@ class WeightedRoundRobinAlgorithm(LoadBalancerAlgorithm):
 
 
 class LeastConnectionsAlgorithm(LoadBalancerAlgorithm):
-    """Least Connections load balancing algorithm."""
     def select_node(self, client_ip: str = "127.0.0.1") -> Optional[BackendNode]:
         with self._lock:
             healthy = [node for node in self.nodes if node.is_healthy]
             if not healthy:
                 return None
-            # Return node with minimum active connections
             return min(healthy, key=lambda n: n.active_connections)
 
 
 class IPHashAlgorithm(LoadBalancerAlgorithm):
-    """Consistent IP Hash load balancing algorithm."""
     def select_node(self, client_ip: str = "127.0.0.1") -> Optional[BackendNode]:
         with self._lock:
             healthy = [node for node in self.nodes if node.is_healthy]
             if not healthy:
                 return None
-            # Compute hash of IP address
             hash_val = int(hashlib.md5(client_ip.encode("utf-8")).hexdigest(), 16)
             return healthy[hash_val % len(healthy)]
 
 
 def get_algorithm(algorithm_name: str, nodes: List[BackendNode]) -> LoadBalancerAlgorithm:
-    """Factory to instantiate the chosen load balancing algorithm."""
     algo = algorithm_name.lower().replace("-", "_").replace(" ", "_")
     if algo in ["round_robin", "rr"]:
         return RoundRobinAlgorithm(nodes)
@@ -156,5 +144,4 @@ def get_algorithm(algorithm_name: str, nodes: List[BackendNode]) -> LoadBalancer
     elif algo in ["ip_hash", "iphash"]:
         return IPHashAlgorithm(nodes)
     else:
-        # Default fallback to Round Robin
         return RoundRobinAlgorithm(nodes)

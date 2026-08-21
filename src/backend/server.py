@@ -1,24 +1,27 @@
-"""
-Distributed Messaging Backend Server.
-
-Can be deployed on Sys2, Sys3, and Sys4 (or local ports 8001, 8002, 8003).
-Exposes REST API endpoints for messaging and performance benchmarking.
-"""
 import sys
 import os
 import time
 import json
 import argparse
 import logging
-from http.server import HTTPServer, ThreadingHTTPServer, BaseHTTPRequestHandler
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 from typing import Dict, Any
 
-# Ensure project root is on sys.path
+if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+if sys.stderr and hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 from src.backend.models import MessageStore
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] [%(name)s] %(message)s",
@@ -27,12 +30,9 @@ logging.basicConfig(
 logger = logging.getLogger("BackendServer")
 
 class MessagingRequestHandler(BaseHTTPRequestHandler):
-    """HTTP Request Handler for the Messaging API."""
-    
     server_version = "DistributedMessaging/1.0"
 
     def log_message(self, format, *args):
-        # Override to integrate with standard logging
         logger.debug(f"{self.address_string()} - {format % args}")
 
     def _send_json_response(self, status_code: int, data: Dict[str, Any], start_time: float):
@@ -42,8 +42,6 @@ class MessagingRequestHandler(BaseHTTPRequestHandler):
         self.send_response(status_code)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(payload)))
-        
-        # Injected headers for load balancer and metrics tracking
         self.send_header("X-Backend-Server", self.server.server_id)
         self.send_header("X-Backend-Host", self.server.host)
         self.send_header("X-Backend-Port", str(self.server.port))
@@ -57,14 +55,12 @@ class MessagingRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(payload)
         self.server.request_count += 1
         
-        # Log request handled
         logger.info(
             f"[{self.server.server_id}] {self.command} {self.path} -> {status_code} "
             f"(took {duration_ms:.2f}ms, total requests: {self.server.request_count})"
         )
 
     def do_OPTIONS(self):
-        """Handle CORS pre-flight requests."""
         self.send_response(204)
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Headers", "*")
@@ -77,7 +73,6 @@ class MessagingRequestHandler(BaseHTTPRequestHandler):
         path = parsed_url.path
         query = parse_qs(parsed_url.query)
 
-        # 1. Health check & status endpoints
         if path in ["/health", "/api/status", "/api/health"]:
             uptime = time.time() - self.server.start_time
             response = {
@@ -94,7 +89,6 @@ class MessagingRequestHandler(BaseHTTPRequestHandler):
             self._send_json_response(200, response, start_time)
             return
 
-        # 2. Channels list endpoint
         if path == "/api/channels":
             channels = self.server.store.get_channels()
             response = {
@@ -105,7 +99,6 @@ class MessagingRequestHandler(BaseHTTPRequestHandler):
             self._send_json_response(200, response, start_time)
             return
 
-        # 3. Messages list endpoint
         if path == "/api/messages":
             channel = query.get("channel", [None])[0]
             limit_str = query.get("limit", ["50"])[0]
@@ -123,7 +116,6 @@ class MessagingRequestHandler(BaseHTTPRequestHandler):
             self._send_json_response(200, response, start_time)
             return
 
-        # 4. Message by ID endpoint: /api/messages/<id>
         if path.startswith("/api/messages/"):
             parts = path.strip("/").split("/")
             if len(parts) == 3 and parts[2].isdigit():
@@ -139,9 +131,7 @@ class MessagingRequestHandler(BaseHTTPRequestHandler):
                     self._send_json_response(404, {"error": "Message not found", "id": msg_id}, start_time)
                 return
 
-        # 5. Workload simulation endpoint (GET or POST)
         if path == "/api/workload":
-            # Extract delay parameter in ms
             delay_ms = float(query.get("delay_ms", [str(self.server.default_delay_ms)])[0])
             if delay_ms > 0:
                 time.sleep(delay_ms / 1000.0)
@@ -155,7 +145,6 @@ class MessagingRequestHandler(BaseHTTPRequestHandler):
             self._send_json_response(200, response, start_time)
             return
 
-        # Root welcome info
         if path == "/":
             response = {
                 "name": "Distributed Messaging Backend Service",
@@ -173,7 +162,6 @@ class MessagingRequestHandler(BaseHTTPRequestHandler):
             self._send_json_response(200, response, start_time)
             return
 
-        # 404 Not Found
         self._send_json_response(404, {"error": "Endpoint not found", "path": path}, start_time)
 
     def do_POST(self):
@@ -181,7 +169,6 @@ class MessagingRequestHandler(BaseHTTPRequestHandler):
         parsed_url = urlparse(self.path)
         path = parsed_url.path
 
-        # Read JSON body
         content_length = int(self.headers.get("Content-Length", 0))
         body = {}
         if content_length > 0:
@@ -192,7 +179,6 @@ class MessagingRequestHandler(BaseHTTPRequestHandler):
                 self._send_json_response(400, {"error": f"Invalid JSON payload: {str(e)}"}, start_time)
                 return
 
-        # 1. Post new message: /api/messages
         if path == "/api/messages":
             sender = body.get("sender", "Anonymous")
             content = body.get("content", "")
@@ -211,7 +197,6 @@ class MessagingRequestHandler(BaseHTTPRequestHandler):
             self._send_json_response(201, response, start_time)
             return
 
-        # 2. Simulated workload POST: /api/workload
         if path == "/api/workload":
             delay_ms = float(body.get("delay_ms", self.server.default_delay_ms))
             if delay_ms > 0:
@@ -227,12 +212,10 @@ class MessagingRequestHandler(BaseHTTPRequestHandler):
             self._send_json_response(200, response, start_time)
             return
 
-        # 404 Not Found
         self._send_json_response(404, {"error": "Endpoint not found", "path": path}, start_time)
 
 
 class BackendHTTPServer(ThreadingHTTPServer):
-    """Multi-threaded HTTP Server for Messaging Backend."""
     def __init__(self, host: str, port: int, server_id: str, default_delay_ms: float = 0.0):
         self.host = host
         self.port = port
@@ -245,18 +228,15 @@ class BackendHTTPServer(ThreadingHTTPServer):
 
 
 def run_backend(host: str = "0.0.0.0", port: int = 8001, server_id: str = "Sys2", default_delay_ms: float = 0.0):
-    """Start and run the backend HTTP server."""
     server = BackendHTTPServer(host, port, server_id, default_delay_ms)
-    logger.info(f"==================================================")
-    logger.info(f"🚀 Messaging Backend [{server_id}] starting on http://{host}:{port}")
-    logger.info(f"   Health check: http://{host}:{port}/health")
-    logger.info(f"   Messages API: http://{host}:{port}/api/messages")
-    logger.info(f"==================================================")
+    logger.info(f"Messaging Backend [{server_id}] starting on http://{host}:{port}")
+    logger.info(f"Health check: http://{host}:{port}/health")
+    logger.info(f"Messages API: http://{host}:{port}/api/messages")
     
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        logger.info(f"🛑 Shutting down backend [{server_id}]...")
+        logger.info(f"Shutting down backend [{server_id}]...")
     finally:
         server.server_close()
         logger.info(f"Backend [{server_id}] stopped.")

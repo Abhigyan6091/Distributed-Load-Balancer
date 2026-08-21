@@ -1,15 +1,19 @@
-"""
-Experiment 2 – Three Backends Benchmark Runner.
-
-Configures / benchmarks the Load Balancer with Sys2, Sys3, and Sys4 active in the pool.
-Runs the EXACT same workload to measure throughput scaling and latency improvements.
-"""
 import sys
 import os
 import argparse
 import logging
 
-# Ensure project root is on sys.path
+if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+if sys.stderr and hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from src.load_generator.generator import run_benchmark
 
@@ -28,9 +32,8 @@ def run_experiment2(
     output_file = os.path.join(output_dir, "experiment2_three_backends.json")
     
     print("\n" + "=" * 70)
-    print("🔬 EXPERIMENT 2: THREE BACKENDS (SYS2, SYS3, SYS4)")
+    print("EXPERIMENT 2: THREE BACKENDS (SYS2, SYS3, SYS4)")
     print("=" * 70)
-    print(" In this experiment, traffic is distributed across THREE backends using Round Robin.")
     print(f" Target URL     : {target_url}")
     print(f" Requests       : {requests}")
     print(f" Concurrency    : {concurrency}")

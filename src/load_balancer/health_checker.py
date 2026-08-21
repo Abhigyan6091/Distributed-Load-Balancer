@@ -1,6 +1,3 @@
-"""
-Background active health checker for backend nodes.
-"""
 import time
 import threading
 import logging
@@ -12,7 +9,6 @@ from src.load_balancer.algorithms import BackendNode
 logger = logging.getLogger("HealthChecker")
 
 class HealthChecker:
-    """Periodically probes /health on each backend node to maintain healthy node pool."""
     def __init__(self, nodes: List[BackendNode], interval_seconds: float = 3.0, timeout_seconds: float = 1.5):
         self.nodes = nodes
         self.interval = max(0.5, float(interval_seconds))
@@ -46,15 +42,15 @@ class HealthChecker:
                 if resp.status == 200:
                     node.mark_healthy(latency_ms)
                     if not was_healthy:
-                        logger.info(f"🟢 [HEALTH RESTORED] Backend {node.node_id} ({node.url}) is now UP (latency: {latency_ms:.2f}ms)")
+                        logger.info(f"[HEALTH RESTORED] Backend {node.node_id} ({node.url}) is now UP (latency: {latency_ms:.2f}ms)")
                 else:
                     node.mark_unhealthy()
                     if was_healthy:
-                        logger.warning(f"🔴 [HEALTH FAILED] Backend {node.node_id} ({node.url}) returned status {resp.status}")
+                        logger.warning(f"[HEALTH FAILED] Backend {node.node_id} ({node.url}) returned status {resp.status}")
         except Exception as e:
             node.mark_unhealthy()
             if was_healthy:
-                logger.warning(f"🔴 [HEALTH FAILED] Backend {node.node_id} ({node.url}) is UNREACHABLE: {e}")
+                logger.warning(f"[HEALTH FAILED] Backend {node.node_id} ({node.url}) is UNREACHABLE: {e}")
 
     def _run_loop(self):
         while self._running:

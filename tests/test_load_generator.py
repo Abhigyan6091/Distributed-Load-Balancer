@@ -1,6 +1,3 @@
-"""
-Unit tests for Load Generator metrics calculation and aggregation.
-"""
 import pytest
 from src.load_generator.metrics import MetricsCollector, RequestResult
 
@@ -8,7 +5,6 @@ def test_metrics_calculation():
     collector = MetricsCollector("TestExperiment")
     collector.start()
 
-    # Record 4 successful requests and 1 failed
     collector.record(RequestResult(success=True, status_code=200, latency_ms=10.0, backend_id="Sys2"))
     collector.record(RequestResult(success=True, status_code=200, latency_ms=20.0, backend_id="Sys3"))
     collector.record(RequestResult(success=True, status_code=200, latency_ms=30.0, backend_id="Sys4"))

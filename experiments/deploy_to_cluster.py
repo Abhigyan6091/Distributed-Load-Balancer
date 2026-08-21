@@ -1,11 +1,7 @@
-"""
-Deployment script to sync project files to the 4 distributed lab systems.
-"""
 import os
 import sys
 import paramiko
 
-# Ensure UTF-8 output on Windows consoles
 if sys.stdout and hasattr(sys.stdout, "reconfigure"):
     try:
         sys.stdout.reconfigure(encoding="utf-8")
@@ -17,10 +13,9 @@ if sys.stderr and hasattr(sys.stderr, "reconfigure"):
     except Exception:
         pass
 
-# Systems configuration
-HOST = "10.1.75.79"
-PASSWORD = "antar2006"
-USERNAME = "student"
+HOST = os.environ.get("LAB_HOST", "10.1.75.79")
+USERNAME = os.environ.get("LAB_USER", "student")
+PASSWORD = os.environ.get("LAB_PASSWORD", "antar2006")
 
 NODES = [
     {"name": "Sys1 (Load Balancer Server)", "ssh_port": 2237, "internal_ip": "172.17.0.38"},
@@ -33,11 +28,10 @@ LOCAL_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 REMOTE_ROOT = "/home/student/Load_Balancer"
 
 def upload_directory(sftp, local_dir, remote_dir):
-    """Recursively upload directory over SFTP."""
     try:
         sftp.mkdir(remote_dir)
     except IOError:
-        pass # Directory already exists
+        pass
         
     for item in os.listdir(local_dir):
         if item in [".git", "__pycache__", ".pytest_cache", "venv", ".idea", ".vscode"]:
@@ -51,7 +45,7 @@ def upload_directory(sftp, local_dir, remote_dir):
             sftp.put(local_path, remote_path)
 
 def deploy_to_node(node):
-    print(f"\n🚀 Connecting to {node['name']} on {HOST}:{node['ssh_port']}...")
+    print(f"\nConnecting to {node['name']} on {HOST}:{node['ssh_port']}...")
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     
@@ -59,16 +53,14 @@ def deploy_to_node(node):
         client.connect(HOST, port=node["ssh_port"], username=USERNAME, password=PASSWORD, timeout=10)
         sftp = client.open_sftp()
         
-        # Ensure remote root exists
         try:
             sftp.mkdir(REMOTE_ROOT)
         except IOError:
             pass
             
-        print(f"  📤 Syncing project files to {REMOTE_ROOT}...")
+        print(f"  Syncing project files to {REMOTE_ROOT}...")
         
-        # Upload directories and files
-        for sub_item in ["src", "config", "experiments", "tests", "requirements.txt", "README.md", "LAB_REPORT.md"]:
+        for sub_item in ["src", "config", "experiments", "tests", "requirements.txt", "README.md", "LAB_REPORT.md", ".gitignore"]:
             local_item_path = os.path.join(LOCAL_ROOT, sub_item)
             remote_item_path = f"{REMOTE_ROOT}/{sub_item}"
             if os.path.exists(local_item_path):
@@ -79,26 +71,25 @@ def deploy_to_node(node):
         
         sftp.close()
         
-        # Verify on remote
         stdin, stdout, stderr = client.exec_command(f"find {REMOTE_ROOT} -maxdepth 2 -not -path '*/.*'")
         files = stdout.read().decode("utf-8").strip().splitlines()
-        print(f"  ✅ Uploaded successfully! Remote files count: {len(files)}")
+        print(f"  Uploaded successfully! Remote files count: {len(files)}")
         
         client.close()
     except Exception as e:
-        print(f"  ❌ Error deploying to {node['name']}: {e}")
+        print(f"  Error deploying to {node['name']}: {e}")
 
 def main():
     print("=" * 70)
-    print("📦 DEPLOYING LOAD BALANCER PROJECT TO DISTRIBUTED LAB CLUSTER")
-    print(f"   Target Host: {HOST}")
+    print("DEPLOYING LOAD BALANCER PROJECT TO DISTRIBUTED LAB CLUSTER")
+    print(f"Target Host: {HOST}")
     print("=" * 70)
     
     for node in NODES:
         deploy_to_node(node)
         
     print("\n" + "=" * 70)
-    print("🎉 ALL FILES DEPLOYED TO SYS1, SYS2, SYS3, SYS4 SUCCESSFULLY!")
+    print("ALL FILES DEPLOYED TO SYS1, SYS2, SYS3, SYS4 SUCCESSFULLY!")
     print("=" * 70 + "\n")
 
 if __name__ == "__main__":

@@ -100,12 +100,12 @@ Both experiments were subjected to an identical workload of **300 requests**, co
 | **Failed Requests** | 0 | 0 | 0 errors |
 | **Error Rate (%)** | 0.0% | 0.0% | 0.0% |
 | **Total Execution Duration** | 1.508 s | 1.335 s | **+11.5% faster** |
-| **Throughput (RPS)** | 199.00 req/s | 224.68 req/s | **🚀 +12.9% RPS Increase** |
-| **Average Latency** | 58.34 ms | 54.83 ms | **📉 +6.0% latency reduction** |
+| **Throughput (RPS)** | 199.00 req/s | 224.68 req/s | **+12.9% RPS Increase** |
+| **Average Latency** | 58.34 ms | 54.83 ms | **+6.0% latency reduction** |
 | **Median Latency (P50)** | 21.80 ms | 25.15 ms | Comparable |
 | **90th Percentile Latency (P90)** | 48.07 ms | 51.51 ms | Comparable |
-| **95th Percentile Latency (P95)** | 524.70 ms | 135.53 ms | **📉 +74.2% latency reduction** |
-| **99th Percentile Latency (P99)** | 713.88 ms | 569.37 ms | **📉 +20.2% latency reduction** |
+| **95th Percentile Latency (P95)** | 524.70 ms | 135.53 ms | **+74.2% latency reduction** |
+| **99th Percentile Latency (P99)** | 713.88 ms | 569.37 ms | **+20.2% latency reduction** |
 | **Maximum Latency** | 797.78 ms | 1058.22 ms | (Tail outlier) |
 | **Minimum Latency** | 2.75 ms | 3.15 ms | (Base network RTT) |
 
@@ -113,9 +113,9 @@ Both experiments were subjected to an identical workload of **300 requests**, co
 
 | Backend Node | Port | Requests Handled | Traffic Share (%) | Distribution Histogram |
 | :--- | :--- | :--- | :--- | :--- |
-| **Sys2** | 8001 | 100 | 33.33% | `████████████████████` |
-| **Sys3** | 8002 | 100 | 33.33% | `████████████████████` |
-| **Sys4** | 8003 | 100 | 33.33% | `████████████████████` |
+| **Sys2** | 8001 | 100 | 33.33% | `||||||||||||||||||||` |
+| **Sys3** | 8002 | 100 | 33.33% | `||||||||||||||||||||` |
+| **Sys4** | 8003 | 100 | 33.33% | `||||||||||||||||||||` |
 
 ---
 

@@ -1,6 +1,3 @@
-"""
-Unit tests for Messaging Backend Server and MessageStore.
-"""
 import pytest
 from src.backend.models import MessageStore
 
@@ -19,7 +16,6 @@ def test_message_store_add_and_retrieve():
     assert msg["content"] == "Testing 123"
     assert msg["channel"] == "random"
 
-    # Retrieve by ID
     retrieved = store.get_message_by_id(msg["id"])
     assert retrieved is not None
     assert retrieved["content"] == "Testing 123"

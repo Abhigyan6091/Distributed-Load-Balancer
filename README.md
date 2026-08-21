@@ -4,7 +4,7 @@ A complete, high-performance, and modular Distributed Systems Load Balancer proj
 
 ---
 
-## 📑 Table of Contents
+## Table of Contents
 - [System Architecture](#system-architecture)
 - [Network Configuration](#network-configuration)
 - [Features](#features)
@@ -24,7 +24,7 @@ A complete, high-performance, and modular Distributed Systems Load Balancer proj
 
 ---
 
-## 🏛️ System Architecture
+## System Architecture
 
 ```text
                  +-----------------------------+
@@ -55,9 +55,9 @@ A complete, high-performance, and modular Distributed Systems Load Balancer proj
 
 ---
 
-## 🌐 Network Configuration
+## Network Configuration
 
-The system supports both **Single-Machine Simulation** (localhost with separate ports) and **4-Machine Distributed Lab Deployment** (separate physical machines or VMs):
+The system supports both Single-Machine Simulation (localhost with separate ports) and 4-Machine Distributed Lab Deployment:
 
 ### Mode A: Single-Machine Simulation (Localhost)
 | Node / Role | System Name | Host / IP | Port | Health Check URL | Description |
@@ -76,20 +76,15 @@ The system supports both **Single-Machine Simulation** (localhost with separate 
 | **Sys3** | **Backend Server 2** | `ssh -p 2239 student@10.1.75.79` | `172.17.0.40` | `8000` | `python3 src/backend/server.py --id Sys3 --port 8000` |
 | **Sys4** | **Backend Server 3** | `ssh -p 2240 student@10.1.75.79` | `172.17.0.41` | `8000` | `python3 src/backend/server.py --id Sys4 --port 8000` |
 
-*Password for all systems:* `antar2006`
-
 #### One-Command Automated Distributed Lab Runner:
 ```bash
-# Sync files to all 4 remote systems:
 python experiments/deploy_to_cluster.py
-
-# Run complete distributed experiment pipeline across Sys1-4:
 python experiments/run_distributed_experiments.py
 ```
 
 ---
 
-## ✨ Features
+## Features
 
 - **Round Robin Load Balancing**: Uniformly balances incoming HTTP requests across all active healthy backend nodes.
 - **Failover & Passive Retries**: If a backend server becomes unreachable or drops connection, the Load Balancer retries on an alternate healthy node without dropping client requests.
@@ -100,7 +95,7 @@ python experiments/run_distributed_experiments.py
 
 ---
 
-## 📦 Prerequisites & Installation
+## Prerequisites & Installation
 
 - Python 3.8+ (Python 3.10+ recommended)
 - Install project dependencies:
@@ -111,7 +106,7 @@ pip install -r requirements.txt
 
 ---
 
-## ⚡ Quick Start: Automated One-Click Runner
+## Quick Start: Automated One-Click Runner
 
 To run the complete lab experiment pipeline automatically (starts backends, verifies reachability, starts load balancer, runs Experiment 1, runs Experiment 2, generates comparison report, and cleans up):
 
@@ -121,7 +116,7 @@ python experiments/run_all.py
 
 ---
 
-## 🛠️ Step-by-Step Manual Deployment
+## Step-by-Step Manual Deployment
 
 ### 1. Start Backend Servers (Sys2, Sys3, Sys4)
 
@@ -147,13 +142,8 @@ python src/backend/server.py --id Sys4 --port 8003
 Before starting the load balancer, verify that each backend responds directly:
 
 ```bash
-# Check Sys2
 curl http://127.0.0.1:8001/health
-
-# Check Sys3
 curl http://127.0.0.1:8002/health
-
-# Check Sys4
 curl http://127.0.0.1:8003/health
 ```
 
@@ -189,7 +179,7 @@ python src/load_generator/generator.py --url http://127.0.0.1:8000 --requests 30
 
 ---
 
-## 🔬 Running Lab Experiments
+## Running Lab Experiments
 
 ### Experiment 1: Single Backend (Sys2)
 Configure the Load Balancer with only Sys2 in the backend pool:
@@ -211,7 +201,7 @@ python experiments/compare_experiments.py
 
 ---
 
-## 📊 Performance Comparison Results
+## Performance Comparison Results
 
 | Performance Metric | Experiment 1 (Single Backend: Sys2) | Experiment 2 (Three Backends: Sys2, Sys3, Sys4) | Improvement / Delta |
 | :--- | :--- | :--- | :--- |
@@ -220,20 +210,20 @@ python experiments/compare_experiments.py
 | **Successful Requests** | 300 (100.0%) | 300 (100.0%) | +0 failed |
 | **Error Rate (%)** | 0.0% | 0.0% | 0.0% |
 | **Total Duration** | 1.51 s | 1.33 s | **+11.5% faster** |
-| **Throughput (RPS)** | 199.00 req/s | 224.68 req/s | **🚀 1.13x - 2.8x Speedup** |
-| **Average Latency** | 58.34 ms | 54.83 ms | **📉 +6.0% latency reduction** |
-| **95th Percentile Latency (P95)** | 524.70 ms | 135.53 ms | **📉 +74.2% latency reduction** |
+| **Throughput (RPS)** | 199.00 req/s | 224.68 req/s | **1.13x - 2.8x Speedup** |
+| **Average Latency** | 58.34 ms | 54.83 ms | **+6.0% latency reduction** |
+| **95th Percentile Latency (P95)** | 524.70 ms | 135.53 ms | **+74.2% latency reduction** |
 
 ### Workload Distribution Across Backends (Experiment 2)
 ```text
-Sys2: 100 requests (33.3%)  ████████████████████
-Sys3: 100 requests (33.3%)  ████████████████████
-Sys4: 100 requests (33.3%)  ████████████████████
+Sys2: 100 requests (33.3%)  ||||||||||||||||||||
+Sys3: 100 requests (33.3%)  ||||||||||||||||||||
+Sys4: 100 requests (33.3%)  ||||||||||||||||||||
 ```
 
 ---
 
-## 📡 API Endpoints Reference
+## API Endpoints Reference
 
 ### Messaging Backend Endpoints
 - `GET /health`: Health check and node status.
@@ -250,7 +240,7 @@ Sys4: 100 requests (33.3%)  █████████████████�
 
 ---
 
-## 🧪 Testing & Quality Assurance
+## Testing & Quality Assurance
 
 Run the automated test suite:
 ```bash

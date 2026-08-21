@@ -1,6 +1,3 @@
-"""
-Unit tests for Load Balancer Algorithms and Node state management.
-"""
 import pytest
 from src.load_balancer.algorithms import (
     BackendNode,
@@ -41,7 +38,6 @@ def test_round_robin_distribution():
     n3 = BackendNode("Sys4", "127.0.0.1", 8003)
     algo = RoundRobinAlgorithm([n1, n2, n3])
 
-    # Sequence should cycle Sys2 -> Sys3 -> Sys4 -> Sys2
     assert algo.select_node().node_id == "Sys2"
     assert algo.select_node().node_id == "Sys3"
     assert algo.select_node().node_id == "Sys4"
@@ -56,7 +52,6 @@ def test_round_robin_skips_unhealthy_node():
 
     n2.mark_unhealthy()
 
-    # Sequence should skip Sys3: Sys2 -> Sys4 -> Sys2
     selected = [algo.select_node().node_id for _ in range(4)]
     assert selected == ["Sys2", "Sys4", "Sys2", "Sys4"]
 
@@ -84,7 +79,6 @@ def test_ip_hash_consistency():
     target_ip1 = algo.select_node(ip1).node_id
     target_ip2 = algo.select_node(ip2).node_id
 
-    # Same IP must always map to the same backend
     for _ in range(10):
         assert algo.select_node(ip1).node_id == target_ip1
         assert algo.select_node(ip2).node_id == target_ip2

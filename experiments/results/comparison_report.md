@@ -1,13 +1,13 @@
 # Distributed Systems Lab: Load Balancer Performance Comparison Report
 
-**Date:** 2026-08-21 09:46:29  
+**Date:** 2026-08-21 10:04:46  
 **Load Balancer:** Sys1 (Round Robin)  
 
 ## 1. Executive Performance Summary
 
 - **Throughput Speedup:** **`1.13x`** increase in requests processed per second (`199.00 RPS` -> `224.68 RPS`).
 - **Average Latency Improvement:** **`6.0%` reduction** in average response time (`58.34 ms` down to `54.83 ms`).
-- **P95 Latency Improvement:** **`74.2%` reduction** under concurrent load.
+- **P95 Latency Improvement:** **`74.2%` reduction** under concurrent load (`524.70 ms` down to `135.53 ms`).
 - **Workload Duration:** Total execution time dropped from `1.51s` to `1.33s` (`11.5%` reduction).
 
 ## 2. Comprehensive Comparison Table
@@ -20,11 +20,11 @@
 | **Failed Requests** | 0 | 0 | **+0 reqs** |
 | **Error Rate (%)** | 0.0% | 0.0% | **+0.00%** |
 | **Total Test Duration** | 1.51 s | 1.33 s | **+11.5% faster** |
-| **Throughput (RPS)** | 199.00 req/s | 224.68 req/s | **🚀 1.13x Speedup** |
-| **Average Latency** | 58.34 ms | 54.83 ms | **📉 +6.0% latency** |
+| **Throughput (RPS)** | 199.00 req/s | 224.68 req/s | **1.13x Speedup** |
+| **Average Latency** | 58.34 ms | 54.83 ms | **+6.0% latency** |
 | **Median Latency (P50)** | 21.80 ms | 25.15 ms | **-3.35 ms** |
 | **90th Percentile Latency (P90)** | 48.07 ms | 51.51 ms | **-3.44 ms** |
-| **95th Percentile Latency (P95)** | 524.70 ms | 135.53 ms | **📉 +74.2% latency** |
+| **95th Percentile Latency (P95)** | 524.70 ms | 135.53 ms | **+74.2% latency** |
 | **99th Percentile Latency (P99)** | 713.88 ms | 569.37 ms | **+144.51 ms** |
 | **Maximum Latency** | 797.78 ms | 1058.22 ms | **-260.44 ms** |
 | **Minimum Latency** | 2.75 ms | 3.15 ms | **-0.40 ms** |
@@ -33,9 +33,9 @@
 
 | Backend Node | Host / Port | Requests Handled | Share (%) | Distribution Visual |
 | :--- | :--- | :--- | :--- | :--- |
-| **Sys2** | Cluster Node | 100 | 33.3% | `████████` |
-| **Sys3** | Cluster Node | 100 | 33.3% | `████████` |
-| **Sys4** | Cluster Node | 100 | 33.3% | `████████` |
+| **Sys2** | Cluster Node | 100 | 33.3% | `||||||||` |
+| **Sys3** | Cluster Node | 100 | 33.3% | `||||||||` |
+| **Sys4** | Cluster Node | 100 | 33.3% | `||||||||` |
 
 ## 4. Theoretical Analysis & Key Insights
 

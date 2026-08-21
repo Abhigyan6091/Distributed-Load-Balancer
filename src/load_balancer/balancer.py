@@ -1,10 +1,3 @@
-"""
-Sys1: Distributed HTTP Reverse Proxy Load Balancer.
-
-Distributes incoming HTTP traffic across multiple backend servers using Round Robin
-(or other algorithms), performs active health checks, handles failovers gracefully,
-and tracks real-time cluster metrics.
-"""
 import sys
 import os
 import time
@@ -13,16 +6,25 @@ import argparse
 import logging
 import urllib.request
 import urllib.error
-from http.server import HTTPServer, ThreadingHTTPServer, BaseHTTPRequestHandler
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse
 from typing import List, Dict, Any, Optional
 
-# Ensure project root is on sys.path
+if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+if sys.stderr and hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 from src.load_balancer.algorithms import BackendNode, get_algorithm, LoadBalancerAlgorithm
 from src.load_balancer.health_checker import HealthChecker
 
-# Configure structured logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] [LoadBalancer] %(message)s",
@@ -32,16 +34,12 @@ logger = logging.getLogger("LoadBalancer")
 
 
 class LoadBalancerRequestHandler(BaseHTTPRequestHandler):
-    """HTTP Handler for forwarding requests to backends."""
-
     server_version = "Sys1-LoadBalancer/1.0"
 
     def log_message(self, format, *args):
-        # Suppress default noisy stdio logging
         pass
 
     def _handle_lb_status(self):
-        """Internal endpoint for cluster management: GET /lb/status"""
         lb_server = self.server
         data = {
             "service": "Sys1-LoadBalancer",
@@ -93,13 +91,11 @@ class LoadBalancerRequestHandler(BaseHTTPRequestHandler):
         start_time = time.time()
         client_ip = self.client_address[0]
 
-        # Read incoming request body if present
         body = None
         content_length = int(self.headers.get("Content-Length", 0))
         if content_length > 0:
             body = self.rfile.read(content_length)
 
-        # Attempt to forward with failover retries
         max_attempts = min(len(lb_server.nodes), lb_server.retry_attempts)
         attempt = 0
         last_error = None
@@ -121,24 +117,20 @@ class LoadBalancerRequestHandler(BaseHTTPRequestHandler):
             node.increment_connections()
             
             try:
-                # Prepare forwarded HTTP request
                 req = urllib.request.Request(
                     url=target_url,
                     data=body if method in ["POST", "PUT", "PATCH"] else None,
                     method=method
                 )
                 
-                # Copy relevant headers
                 for header_key, header_val in self.headers.items():
                     if header_key.lower() not in ["host", "content-length"]:
                         req.add_header(header_key, header_val)
                 
-                # Add proxy metadata headers
                 req.add_header("X-Forwarded-For", client_ip)
                 req.add_header("X-Forwarded-Host", self.headers.get("Host", f"{lb_server.host}:{lb_server.port}"))
                 req.add_header("X-Forwarded-Proto", "http")
 
-                # Forward request to backend
                 t_backend_start = time.time()
                 with urllib.request.urlopen(req, timeout=lb_server.timeout) as backend_resp:
                     backend_status = backend_resp.status
@@ -150,7 +142,6 @@ class LoadBalancerRequestHandler(BaseHTTPRequestHandler):
                     node.decrement_connections(success=True)
                     node.mark_healthy(backend_latency_ms)
 
-                    # Send backend response back to client
                     self.send_response(backend_status)
                     for k, v in backend_headers.items():
                         if k.lower() not in ["transfer-encoding", "content-length"]:
@@ -163,7 +154,6 @@ class LoadBalancerRequestHandler(BaseHTTPRequestHandler):
                     self.end_headers()
                     self.wfile.write(backend_body)
 
-                    # Log successful routing
                     logger.info(
                         f"[REQ #{req_id}] {method} {self.path} -> {node.node_id} ({node.url}) "
                         f"[{backend_status}] (proxy: {proxy_latency_ms:.1f}ms, backend: {backend_latency_ms:.1f}ms)"
@@ -171,7 +161,6 @@ class LoadBalancerRequestHandler(BaseHTTPRequestHandler):
                     return
 
             except urllib.error.HTTPError as http_err:
-                # Backend replied with 4xx / 5xx HTTP response
                 backend_body = http_err.read()
                 proxy_latency_ms = (time.time() - start_time) * 1000.0
                 node.decrement_connections(success=(http_err.code < 500))
@@ -193,16 +182,14 @@ class LoadBalancerRequestHandler(BaseHTTPRequestHandler):
                 return
 
             except Exception as conn_err:
-                # Connection error or timeout - failover to next backend
                 node.decrement_connections(success=False)
                 node.mark_unhealthy()
                 last_error = conn_err
                 logger.warning(
-                    f"⚠️ [FAILOVER] Backend {node.node_id} failed on {method} {self.path} ({conn_err}). "
+                    f"[FAILOVER] Backend {node.node_id} failed on {method} {self.path} ({conn_err}). "
                     f"Attempting next backend (attempt {attempt}/{max_attempts})..."
                 )
 
-        # All attempts failed
         self._send_error_response(
             502,
             f"Bad Gateway: All target backends failed. Last error: {str(last_error)}",
@@ -231,7 +218,6 @@ class LoadBalancerRequestHandler(BaseHTTPRequestHandler):
 
 
 class LoadBalancerServer(ThreadingHTTPServer):
-    """Multi-threaded HTTP Reverse Proxy Load Balancer."""
     def __init__(
         self,
         host: str,
@@ -253,21 +239,18 @@ class LoadBalancerServer(ThreadingHTTPServer):
         self.start_time = time.time()
         self.request_count = 0
         
-        # Start health checker background daemon
         self.health_checker = HealthChecker(nodes, interval_seconds=health_interval, timeout_seconds=health_timeout)
         self.health_checker.start()
         
         super().__init__((host, port), LoadBalancerRequestHandler)
 
     def update_backends(self, new_nodes: List[BackendNode]):
-        """Dynamically update backend pool."""
         self.nodes = new_nodes
         self.algorithm.set_nodes(new_nodes)
         self.health_checker.nodes = new_nodes
 
 
 def create_nodes_from_config(config_dict: Dict[str, Any]) -> List[BackendNode]:
-    """Helper to parse backend node definitions from config dictionary."""
     nodes = []
     for b in config_dict.get("backends", []):
         node = BackendNode(
@@ -288,9 +271,7 @@ def run_load_balancer(
     health_interval: float = 3.0,
     health_timeout: float = 1.5
 ):
-    """Start and run the load balancer."""
     if not nodes:
-        # Default single machine nodes
         nodes = [
             BackendNode("Sys2", "127.0.0.1", 8001),
             BackendNode("Sys3", "127.0.0.1", 8002),
@@ -307,18 +288,18 @@ def run_load_balancer(
     )
 
     logger.info("=" * 60)
-    logger.info(f"⚖️  Sys1 Load Balancer running on http://{host}:{port}")
-    logger.info(f"   Algorithm : {algorithm.upper()}")
-    logger.info(f"   Status URL: http://{host}:{port}/lb/status")
-    logger.info(f"   Configured Backends ({len(nodes)} total):")
+    logger.info(f"Sys1 Load Balancer running on http://{host}:{port}")
+    logger.info(f"Algorithm : {algorithm.upper()}")
+    logger.info(f"Status URL: http://{host}:{port}/lb/status")
+    logger.info(f"Configured Backends ({len(nodes)} total):")
     for n in nodes:
-        logger.info(f"     - [{n.node_id}] {n.url} (weight: {n.weight})")
+        logger.info(f"  - [{n.node_id}] {n.url} (weight: {n.weight})")
     logger.info("=" * 60)
 
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        logger.info("🛑 Shutting down load balancer...")
+        logger.info("Shutting down load balancer...")
     finally:
         server.health_checker.stop()
         server.server_close()

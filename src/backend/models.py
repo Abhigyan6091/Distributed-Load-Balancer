@@ -1,19 +1,14 @@
-"""
-Data models and storage for the Messaging Service backend.
-"""
 import time
 import threading
 from typing import List, Dict, Any, Optional
 
 class MessageStore:
-    """Thread-safe in-memory message store for the Messaging API."""
     def __init__(self, initial_messages: Optional[List[Dict[str, Any]]] = None):
         self._lock = threading.Lock()
         self._messages: List[Dict[str, Any]] = []
         self._next_id = 1
         self._channels = ["general", "distributed-systems", "announcements", "random"]
         
-        # Seed with initial messages
         if initial_messages:
             for msg in initial_messages:
                 self.add_message(msg.get("sender", "System"), msg.get("content", ""), msg.get("channel", "general"))

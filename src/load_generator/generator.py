@@ -1,9 +1,3 @@
-"""
-High-concurrency Load Generator and Benchmark Client.
-
-Sends configurable workloads to the Sys1 Load Balancer (or directly to backends),
-measures response times, throughput, error rates, and backend distribution.
-"""
 import sys
 import os
 import time
@@ -17,14 +11,17 @@ import urllib.error
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, Any, Optional
 
-# Ensure UTF-8 output on Windows consoles
 if sys.stdout and hasattr(sys.stdout, "reconfigure"):
     try:
         sys.stdout.reconfigure(encoding="utf-8")
     except Exception:
         pass
+if sys.stderr and hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
 
-# Ensure project root is on sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 from src.load_generator.metrics import MetricsCollector, RequestResult
 
@@ -37,7 +34,6 @@ logger = logging.getLogger("LoadGenerator")
 
 
 class LoadGenerator:
-    """Multi-threaded HTTP benchmark load generator."""
     def __init__(
         self,
         target_url: str,
@@ -59,7 +55,6 @@ class LoadGenerator:
         self._lock = threading.Lock()
 
     def _generate_request_data(self, req_index: int) -> Dict[str, Any]:
-        """Generate request payload and path based on scenario."""
         if self.scenario == "workload":
             return {
                 "method": "POST",
@@ -88,7 +83,6 @@ class LoadGenerator:
                 }).encode("utf-8")
             }
         else:
-            # "mixed" scenario: 40% read messages, 30% write messages, 30% simulated workload
             dice = random.random()
             if dice < 0.40:
                 return {
@@ -118,7 +112,6 @@ class LoadGenerator:
                 }
 
     def _execute_single_request(self, req_index: int) -> RequestResult:
-        """Sends one HTTP request and records latency and response headers."""
         req_spec = self._generate_request_data(req_index)
         url = f"{self.target_url}{req_spec['path']}"
         t0 = time.time()
@@ -135,7 +128,6 @@ class LoadGenerator:
                 status_code = resp.status
                 headers = dict(resp.headers)
                 
-                # Identify backend from LB header or backend server header
                 backend_id = headers.get("X-Selected-Backend") or headers.get("X-Backend-Server") or headers.get("X-Handled-By") or "Unknown"
                 
                 return RequestResult(
@@ -166,9 +158,8 @@ class LoadGenerator:
             )
 
     def run(self) -> Dict[str, Any]:
-        """Executes the load test with thread pool concurrency."""
-        logger.info(f"⚡ Starting load test -> {self.target_url}")
-        logger.info(f"   Requests: {self.total_requests} | Concurrency: {self.concurrency} | Scenario: {self.scenario}")
+        logger.info(f"Starting load test -> {self.target_url}")
+        logger.info(f"Requests: {self.total_requests} | Concurrency: {self.concurrency} | Scenario: {self.scenario}")
         
         self.metrics.start()
         start_time = time.time()
@@ -188,7 +179,7 @@ class LoadGenerator:
                         print(f" Progress: {self._completed_count}/{self.total_requests} ({pct:.0f}%) | Current Throughput: {rps:.1f} RPS", end="\r", flush=True)
 
         self.metrics.finish()
-        print() # Newline after progress bar
+        print()
         self.metrics.print_summary()
         return self.metrics.calculate_summary()
 
@@ -202,7 +193,6 @@ def run_benchmark(
     output_file: Optional[str] = None,
     experiment_name: str = "Benchmark"
 ) -> Dict[str, Any]:
-    """Runner entry point for load generator."""
     generator = LoadGenerator(
         target_url=target_url,
         total_requests=requests,
@@ -216,7 +206,7 @@ def run_benchmark(
     if output_file:
         os.makedirs(os.path.dirname(os.path.abspath(output_file)), exist_ok=True)
         generator.metrics.save_json(output_file)
-        logger.info(f"📁 Metrics saved to {output_file}")
+        logger.info(f"Metrics saved to {output_file}")
     
     return results
 
